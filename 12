@@ -1,0 +1,30 @@
+from keras_yolo3.yolo import YOLO
+from PIL import Image
+import matplotlib.pyplot as plt
+
+# Paths to COCO dataset annotations and images
+data_dir = 'path/to/coco'
+train_ann_file = f'{data_dir}/annotations/instances_train2017.json'
+val_ann_file = f'{data_dir}/annotations/instances_val2017.json'
+train_img_dir = f'{data_dir}/train2017'
+val_img_dir = f'{data_dir}/val2017'
+
+# Initialize YOLOv3 detector with pretrained weights
+yolo = YOLO(model_path='path/to/yolov3.weights', anchors_path='path/to/yolo_anchors.txt',
+            classes_path='path/to/coco_classes.txt')
+
+# Function to load and preprocess image
+def load_image(img_path):
+    image = Image.open(img_path)
+    return image
+
+# Example usage for detection
+image_path = 'path/to/image.jpg'
+image = load_image(image_path)
+detected_image = yolo.detect_image(image)
+
+# Display results
+plt.figure(figsize=(10, 10))
+plt.imshow(detected_image)
+plt.axis('off')
+plt.show()
