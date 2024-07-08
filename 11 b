@@ -1,0 +1,44 @@
+import tensorflow as tf
+from tensorflow.keras import layers
+import numpy as np
+
+# Example input shape (224x224 image with 3 channels)
+input_shape = (224, 224, 3)
+
+# Backbone network (typically ResNet or similar)
+backbone = tf.keras.applications.ResNet50(include_top=False, weights=None, input_shape=input_shape)
+
+# Region Proposal Network (RPN)
+rpn_class = layers.Conv2D(2, (1, 1), activation='softmax', padding='valid', name='rpn_class')(backbone.output)
+rpn_bbox = layers.Conv2D(4, (1, 1), activation='linear', padding='valid', name='rpn_bbox')(backbone.output)
+
+# ROI Align layer (not shown in detail here, typically uses RoIAlign or similar)
+roi_align = layers.Dense(14 * 14 * 256, activation='relu')(backbone.output)
+
+# Classifier head for bounding box classification
+mrcnn_class_logits = layers.Dense(81, activation='softmax', name='mrcnn_class_logits')(roi_align)
+mrcnn_probs = layers.Dense(81, activation='softmax', name='mrcnn_probs')(mrcnn_class_logits)
+
+# Bounding box refinement for detection
+mrcnn_bbox = layers.Dense(81 * 4, activation='linear', name='mrcnn_bbox_fc')(roi_align)
+mrcnn_bbox = layers.Reshape((-1, 4), name='mrcnn_bbox')(mrcnn_bbox)
+
+# Mask head for segmentation
+mrcnn_mask = layers.Conv2DTranspose(256, (2, 2), strides=2, activation='relu')(roi_align)
+mrcnn_mask = layers.Conv2D(81, (1, 1), activation='sigmoid')(mrcnn_mask)
+
+# Create model
+model = tf.keras.models.Model(inputs=backbone.input,
+                              outputs=[rpn_class, rpn_bbox, mrcnn_class_logits, mrcnn_probs, mrcnn_bbox, mrcnn_mask])
+
+# Example usage
+dummy_image = np.random.rand(1, 224, 224, 3)  # Example input image
+rpn_class, rpn_bbox, mrcnn_class_logits, mrcnn_probs, mrcnn_bbox, mrcnn_mask = model.predict(dummy_image)
+
+# Print shapes for illustration
+print('RPN Class:', rpn_class.shape)
+print('RPN BBox:', rpn_bbox.shape)
+print('MRCNN Class Logits:', mrcnn_class_logits.shape)
+print('MRCNN Probs:', mrcnn_probs.shape)
+print('MRCNN BBox:', mrcnn_bbox.shape)
+print('MRCNN Mask:', mrcnn_mask.shape)
