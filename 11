@@ -1,0 +1,42 @@
+import torch
+import torchvision
+from PIL import Image
+import matplotlib.pyplot as plt
+import torchvision.transforms as T
+
+# Load a pre-trained Mask R-CNN model
+model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
+model.eval()  # Set the model to evaluation mode
+
+# Load an image
+img_path = 'path_to_your_image.jpg'
+img = Image.open(img_path).convert("RGB")
+
+# Preprocess the image
+transform = T.Compose([T.ToTensor()])
+img = transform(img)
+
+# Add a batch dimension
+img = img.unsqueeze(0)
+
+# Perform inference
+with torch.no_grad():
+    prediction = model(img)
+
+# Visualize the results
+def plot_image(image, masks, boxes):
+    fig, ax = plt.subplots(1, figsize=(12,9))
+    ax.imshow(image)
+    for i in range(len(masks)):
+        mask = masks[i].cpu().numpy()
+        box = boxes[i].cpu().numpy()
+        ax.imshow(mask, alpha=0.5)
+        rect = plt.Rectangle((box[0], box[1]), box[2] - box[0], box[3] - box[1], fill=False, color='red')
+        ax.add_patch(rect)
+    plt.show()
+
+# Convert image back to numpy
+img_np = img.squeeze().permute(1, 2, 0).cpu().numpy()
+
+# Plot the image with masks and bounding boxes
+plot_image(img_np, prediction[0]['masks'], prediction[0]['boxes'])
